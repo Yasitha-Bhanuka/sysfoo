@@ -1,34 +1,39 @@
 pipeline {
-    agent any
-
-    tools{
-        maven 'Maven 3.9.6'
+  agent any
+  stages {
+    stage('build') {
+      steps {
+        echo 'Compiling sysfoo application.....'
+        sh 'mvn compile'
+      }
     }
 
-    stages{
-        stage('build'){
-            steps{
-                echo 'Compiling sysfoo application.....'
-                sh 'mvn compile'
-            }
-        }
-        stage('test'){
-            steps{
-                echo 'Running unit tests.....'
-                sh 'mvn clean test'
-            }
-        }
-        stage('package'){
-            steps{
-                echo 'Packaging the application........'
-                sh 'mvn package -DskipTests'
-            }
-        }
+    stage('test') {
+      steps {
+        echo 'Running unit tests.....'
+        sh 'mvn clean test'
+      }
     }
 
-    post {
-        always{
-            echo 'This pipeline executed completed.'
-        }
+    stage('package') {
+      steps {
+        echo 'Packaging the application........'
+        sh '''GIT_SHORT_COMMIT=${echo $GTI_COMMIT | cut -c 1-7}
+mvn versions:set -DnewVersion="$GIT_SHORT_COMMIT"
+mvn versions:commit'''
+        sh 'mvn package -DskipTests'
+        archiveArtifacts '**/target/*.jar'
+      }
     }
+
+  }
+  tools {
+    maven 'Maven 3.9.6'
+  }
+  post {
+    always {
+      echo 'This pipeline executed completed.'
+    }
+
+  }
 }
